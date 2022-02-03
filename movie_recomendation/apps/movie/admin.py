@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from movie_recomendation.apps.movie.models import Genre, Movie
+from movie_recomendation.apps.movie.models import (
+    Genre,
+    Movie,
+    MovieGenre,
+    MovieRating
+)
 
 # Register your models here.
 
@@ -13,13 +18,30 @@ class GenreAdmin(admin.ModelAdmin):
 
 
 class MovieAdmin(admin.ModelAdmin):
-    autocomplete_fields = ('genres', )
     search_fields = ('title',)
-    list_filter = ('genres',)
 
     class Meta:
         model = Movie
 
 
+class MovieGenreAdmin(admin.ModelAdmin):
+    autocomplete_fields = ('genre', 'movie',)
+    list_filter = ('genre', )
+    search_fields = ('genre__name', 'movie__title')
+
+    class Meta:
+        model = MovieGenre
+
+
+class MovieRatingAdmin(admin.ModelAdmin):
+    autocomplete_fields = ('movie',)
+    search_fields = ('movie__name',)
+
+    class Meta:
+        model = MovieRating
+
+
 admin.site.register(Genre, GenreAdmin)
 admin.site.register(Movie, MovieAdmin)
+admin.site.register(MovieGenre, MovieGenreAdmin)
+admin.site.register(MovieRating, MovieRatingAdmin)
