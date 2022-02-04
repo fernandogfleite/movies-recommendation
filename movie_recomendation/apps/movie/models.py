@@ -34,13 +34,13 @@ class MovieGenre(models.Model):
 
 
 class MovieRating(models.Model):
-    user_id = models.IntegerField()
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
-    rating = models.FloatField()
-    timestamp = models.DateTimeField()
+    rating = models.DecimalField(decimal_places=6, max_digits=12)
+    rating_counts = models.IntegerField()
+    score = models.DecimalField(decimal_places=6, max_digits=12)
 
     class Meta:
-        ordering = ('movie', 'rating')
+        ordering = ('-score',)
 
     def __str__(self) -> str:
         return f'{self.movie.title} - Rating: {self.rating}'

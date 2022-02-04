@@ -11,7 +11,6 @@ from pandas import (
     read_csv
 )
 
-from datetime import datetime
 
 IMDB_LINK = 'https://www.imdb.com/title/tt'
 TMDB_LINK = 'https://www.themoviedb.org/movie/'
@@ -125,13 +124,28 @@ class Command(BaseCommand):
     def register_ratings_from_csv(self):
         ratings = read_csv('movies-csv/ratings.csv')
 
+        ratings_df = DataFrame(ratings.groupby('movieId').rating.mean())
+
+        ratings_df['rating_counts'] = ratings.groupby('movieId').rating.count()
+
+        C = ratings_df['rating'].mean()
+
+        m = ratings_df.rating_counts.min()
+
+        def weighted_rating(x, m=m, C=C):
+            v = x['rating_counts']
+            R = x['rating']
+            return (v/(v+m) * R) + (m/(m+v) * C)
+
+        ratings_df['score'] = ratings_df.apply(weighted_rating, axis=1)
+
         movie_ratings = []
 
-        for row in range(len(ratings)):
-            user_id = ratings['userId'][row]
-            movie_id = ratings['movieId'][row]
-            rating = ratings['rating'][row]
-            timestamp = ratings['timestamp'][row]
+        for index in ratings_df.index:
+            rating = ratings_df['rating'][index]
+            movie_id = index
+            rating_counts = ratings_df['rating_counts'][index]
+            score = ratings_df['score'][index]
 
             try:
                 movie = Movie.objects.get(id=movie_id)
@@ -141,15 +155,14 @@ class Command(BaseCommand):
                     f'Filme com id {movie_id} não existe no banco de dados')
                 continue
 
-            if not MovieRating.objects.filter(user_id=user_id, movie=movie):
-                datetime_timestamp = datetime.fromtimestamp(timestamp)
+            if not MovieRating.objects.filter(movie=movie).exists():
 
                 movie_ratings.append(
                     MovieRating(
-                        user_id=user_id,
                         movie=movie,
                         rating=rating,
-                        timestamp=datetime_timestamp
+                        rating_counts=rating_counts,
+                        score=score
                     )
                 )
         MovieRating.objects.bulk_create(movie_ratings)

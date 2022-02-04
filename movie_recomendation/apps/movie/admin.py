@@ -35,7 +35,7 @@ class MovieGenreAdmin(admin.ModelAdmin):
 
 class MovieRatingAdmin(admin.ModelAdmin):
     autocomplete_fields = ('movie',)
-    search_fields = ('movie__name',)
+    search_fields = ('movie__title',)
 
     class Meta:
         model = MovieRating
