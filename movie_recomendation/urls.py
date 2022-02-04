@@ -16,6 +16,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from movie_recomendation.apps.movie import views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('genres/<int:genre_id>/movies/', views.list_movies_by_genre),
+    path('genres/', views.list_all_genres)
 ]
