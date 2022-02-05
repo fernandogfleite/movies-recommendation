@@ -67,11 +67,13 @@ class Command(BaseCommand):
 
             tmdb = str(tmdb_id).split('.')[0]
 
+            imdb = str(imdb_id).split('.')[0]
+
             movie_instances.append(
                 Movie(
                     id=id,
                     title=title,
-                    imdb=f'{IMDB_LINK}{str(imdb_id)}',
+                    imdb=f'{IMDB_LINK}{imdb}',
                     tmdb=f'{TMDB_LINK}{tmdb}'
                 )
             )
