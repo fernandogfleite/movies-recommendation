@@ -11,6 +11,8 @@ from pandas import (
     read_csv
 )
 
+import time
+
 
 IMDB_LINK = 'https://www.imdb.com/title/tt'
 TMDB_LINK = 'https://www.themoviedb.org/movie/'
@@ -20,16 +22,21 @@ class Command(BaseCommand):
     help = 'Run script'
 
     def handle(self, *args, **kwargs):
+        start = time.time()
 
         movies = read_csv('movies-csv/movies.csv')
 
         self.register_genres_from_csv(movies_csv=movies)
         self.register_movies_from_csv(movies_csv=movies)
         self.register_movie_genres_from_csv(movies_csv=movies)
-        self.register_movie_links_from_csv()
         self.register_ratings_from_csv()
 
+        end = time.time()
+
+        print(f'The script run in {end-start:.2f}s')
+
     def register_genres_from_csv(self, movies_csv: DataFrame):
+        start = time.time()
         unique_genres = set()
 
         for genres in movies_csv['genres']:
@@ -38,90 +45,66 @@ class Command(BaseCommand):
             for genre in genre_list:
                 unique_genres.add(genre)
 
-        genre_instances = []
-
-        for genre in sorted(unique_genres):
-            if not Genre.objects.filter(name=genre).exists():
-                genre_instances.append(
-                    Genre(
-                        name=genre
-                    )
-                )
+        genre_instances = [
+            Genre(name=genre) for genre in unique_genres
+        ]
 
         Genre.objects.bulk_create(genre_instances)
+        end = time.time()
+        print(f"Created {len(genre_instances)} genres in {end-start:.2f}s")
 
     def register_movies_from_csv(self, movies_csv: DataFrame):
+        links = read_csv('movies-csv/links.csv')
+        links_df = DataFrame(links.groupby('movieId').mean())
+        start = time.time()
         movie_instances = []
         for row in range(len(movies_csv)):
             id = movies_csv['movieId'][row]
             title = movies_csv['title'][row]
 
-            if not Movie.objects.filter(id=id).exists():
-                movie_instances.append(
-                    Movie(
-                        id=id,
-                        title=title
-                    )
+            imdb_id = links_df['imdbId'][id]
+            tmdb_id = links_df['tmdbId'][id]
+
+            tmdb = str(tmdb_id).split('.')[0]
+
+            movie_instances.append(
+                Movie(
+                    id=id,
+                    title=title,
+                    imdb=f'{IMDB_LINK}{str(imdb_id)}',
+                    tmdb=f'{TMDB_LINK}{tmdb}'
                 )
+            )
 
         Movie.objects.bulk_create(movie_instances)
+        end = time.time()
+        print(f"Created {len(movie_instances)} movies in {end-start:.2f}s")
 
     def register_movie_genres_from_csv(self, movies_csv: DataFrame):
+        start = time.time()
+        movies_genres = []
         for row in range(len(movies_csv)):
             id = movies_csv['movieId'][row]
             genres = movies_csv['genres'][row]
 
-            try:
-                movie = Movie.objects.get(id=id)
-
-            except Movie.DoesNotExist:
-                self.stdout.write(
-                    f'Filme com id {id} não existe no banco de dados')
-                continue
-
             genre_list = genres.split('|')
 
-            movie_genres = []
-            for genre in Genre.objects.filter(name__in=genre_list):
-                if not MovieGenre.objects.filter(movie=movie,
-                                                 genre=genre).exists():
-                    movie_genres.append(
-                        MovieGenre(
-                            movie=movie,
-                            genre=genre
-                        )
-                    )
+            movies_genres += [
+                MovieGenre(
+                    movie_id=id,
+                    genre=genre
+                ) for genre in Genre.objects.filter(name__in=genre_list)
+            ]
 
-            MovieGenre.objects.bulk_create(movie_genres)
+        MovieGenre.objects.bulk_create(movies_genres)
 
-    def register_movie_links_from_csv(self):
-        links = read_csv('movies-csv/links.csv')
-
-        movie_instances_update = []
-
-        for row in range(len(links)):
-            movie_id = links['movieId'][row]
-            imdb_id = links['imdbId'][row]
-            tmdb_id = links['tmdbId'][row]
-
-            try:
-                movie = Movie.objects.get(id=movie_id)
-
-            except Movie.DoesNotExist:
-                self.stdout.write(
-                    f'Filme com id {id} não existe no banco de dados')
-                continue
-
-            tmdb = str(tmdb_id).split('.')[0]
-
-            movie.imdb = f'{IMDB_LINK}{str(imdb_id)}'
-            movie.tmdb = f'{TMDB_LINK}{tmdb}'
-
-            movie_instances_update.append(movie)
-
-        Movie.objects.bulk_update(movie_instances_update, ['imdb', 'tmdb'])
+        end = time.time()
+        print(
+            f"Registered {len(movies_genres)} movie genres in {end-start:.2f}s")
 
     def register_ratings_from_csv(self):
+        start = time.time()
+
         ratings = read_csv('movies-csv/ratings.csv')
 
         ratings_df = DataFrame(ratings.groupby('movieId').rating.mean())
@@ -147,22 +130,15 @@ class Command(BaseCommand):
             rating_counts = ratings_df['rating_counts'][index]
             score = ratings_df['score'][index]
 
-            try:
-                movie = Movie.objects.get(id=movie_id)
-
-            except Movie.DoesNotExist:
-                self.stdout.write(
-                    f'Filme com id {movie_id} não existe no banco de dados')
-                continue
-
-            if not MovieRating.objects.filter(movie=movie).exists():
-
-                movie_ratings.append(
-                    MovieRating(
-                        movie=movie,
-                        rating=rating,
-                        rating_counts=rating_counts,
-                        score=score
-                    )
+            movie_ratings.append(
+                MovieRating(
+                    movie_id=movie_id,
+                    rating=rating,
+                    rating_counts=rating_counts,
+                    score=score
                 )
+            )
         MovieRating.objects.bulk_create(movie_ratings)
+        end = time.time()
+        print(
+            f"Registered {len(movie_ratings)} movie ratings in {end-start:.2f}s")
