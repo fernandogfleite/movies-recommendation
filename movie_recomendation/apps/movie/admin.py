@@ -4,7 +4,6 @@ from movie_recomendation.apps.movie.models import (
     Genre,
     Movie,
     MovieGenre,
-    MovieRating
 )
 
 # Register your models here.
@@ -33,15 +32,6 @@ class MovieGenreAdmin(admin.ModelAdmin):
         model = MovieGenre
 
 
-class MovieRatingAdmin(admin.ModelAdmin):
-    autocomplete_fields = ('movie',)
-    search_fields = ('movie__title',)
-
-    class Meta:
-        model = MovieRating
-
-
 admin.site.register(Genre, GenreAdmin)
 admin.site.register(Movie, MovieAdmin)
 admin.site.register(MovieGenre, MovieGenreAdmin)
-admin.site.register(MovieRating, MovieRatingAdmin)
