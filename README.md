@@ -1,29 +1,54 @@
-# movies-recommendation
+# Movie Recommendations API
 
-Buildar container docker com docker-compose: 
+### Dependencies
+- Python 3.10.2 (used version in development)
+- Docker
+- Docker Compose
+
+## How to run the application
+
+### [Clone the repository](https://github.com/fernandogfleite/movies-recommendation)
+
+
+### Define an .env file with the following variables:
+- SECRET_KEY
+- DEBUG
+- POSTGRES_DB
+- POSTGRES_USER
+- POSTGRES_PASSWORD
+- DB_HOST
+
+
+### Build the container with docker-compose:
 ```
 docker-compose -d --buld
 ```
 
-Subir aplicação:
-```
-docker-compose up
-```
-
-Criar superusuario:
+### Create a superuser:
 ```
 docker-compose run server sh -c "python manage.py createsuperuser"
 ```
 
-Criar superusuario:
-```
-docker-compose run server sh -c "python manage.py createsuperuser"
-```
+### Download the CSVs with movies informations in [MovieLens](https://grouplens.org/datasets/movielens/25m/).
 
-Rodar script:
+
+### Create a dir in root with create a directory named movies-csv and and extract the following files:
+- links.csv
+- movies.csv
+- ratings.csv
+
+
+### Run the script to populate the database:
 ```
 docker-compose run server sh -c "python manage.py script"
 ```
 
+### Run the server:
+```
+docker-compose up
+```
 
-Abra o navegador e vá para: localhost:8000/admin
+### Open the browser in localhost:8000 and the application is running.
+
+## Contributors
+- Fernando Leite
