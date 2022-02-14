@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+
 from movie_recomendation.apps.movie.models import Genre, Movie, MovieGenre
 
 
@@ -16,6 +17,7 @@ class GenresField(serializers.Field):
 
 
 class GenreSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Genre
         fields = '__all__'
