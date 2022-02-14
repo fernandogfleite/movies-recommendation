@@ -1,8 +1,7 @@
 from movie_recomendation.apps.movie.models import (
     Genre,
     Movie,
-    MovieGenre,
-    MovieRating
+    MovieGenre
 )
 from django.core.management.base import BaseCommand
 
@@ -24,16 +23,18 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         start = time.time()
 
-        movies = read_csv('movies-csv/movies.csv')
+        movies = self.csv_to_dataframe('movies-csv/movies.csv')
 
         self.register_genres_from_csv(movies_csv=movies)
         self.register_movies_from_csv(movies_csv=movies)
         self.register_movie_genres_from_csv(movies_csv=movies)
-        self.register_ratings_from_csv()
 
         end = time.time()
 
         print(f'The script run in {end-start:.2f}s')
+
+    def csv_to_dataframe(self, csv_path):
+        return read_csv(csv_path)
 
     def register_genres_from_csv(self, movies_csv: DataFrame):
         start = time.time()
@@ -51,30 +52,39 @@ class Command(BaseCommand):
 
         Genre.objects.bulk_create(genre_instances)
         end = time.time()
-        print(f"Created {len(genre_instances)} genres in {end-start:.2f}s")
+        print(f"Created {len(genre_instances)} genres in {(end-start):.2f}s")
 
     def register_movies_from_csv(self, movies_csv: DataFrame):
-        links = read_csv('movies-csv/links.csv')
-        links_df = DataFrame(links.groupby('movieId').mean())
         start = time.time()
+
+        links_df = self.read_links_from_csv()
+        ratings_df = self.read_ratings_from_csv()
+
         movie_instances = []
         for row in range(len(movies_csv)):
             id = movies_csv['movieId'][row]
             title = movies_csv['title'][row]
 
-            imdb_id = links_df['imdbId'][id]
-            tmdb_id = links_df['tmdbId'][id]
+            imdb_id = links_df['imdbId'].get(id, None)
+            tmdb_id = links_df['tmdbId'].get(id, None)
 
             tmdb = str(tmdb_id).split('.')[0]
 
             imdb = str(imdb_id).split('.')[0]
+
+            rating = ratings_df['rating'].get(id, 0)
+            rating_counts = ratings_df['rating_counts'].get(id, 0)
+            score = ratings_df['score'].get(id, 0)
 
             movie_instances.append(
                 Movie(
                     id=id,
                     title=title,
                     imdb=f'{IMDB_LINK}{imdb}',
-                    tmdb=f'{TMDB_LINK}{tmdb}'
+                    tmdb=f'{TMDB_LINK}{tmdb}',
+                    rating=rating,
+                    rating_counts=rating_counts,
+                    score=score
                 )
             )
 
@@ -102,12 +112,16 @@ class Command(BaseCommand):
 
         end = time.time()
         print(
-            f"Registered {len(movies_genres)} movie genres in {end-start:.2f}s")
+            f"Registered {len(movies_genres)} movie genres in {end-start:.2f}s"
+        )
 
-    def register_ratings_from_csv(self):
-        start = time.time()
+    def read_links_from_csv(self):
+        links = self.csv_to_dataframe('movies-csv/links.csv')
 
-        ratings = read_csv('movies-csv/ratings.csv')
+        return DataFrame(links.groupby('movieId').mean())
+
+    def read_ratings_from_csv(self):
+        ratings = self.csv_to_dataframe('movies-csv/ratings.csv')
 
         ratings_df = DataFrame(ratings.groupby('movieId').rating.mean())
 
@@ -124,23 +138,4 @@ class Command(BaseCommand):
 
         ratings_df['score'] = ratings_df.apply(weighted_rating, axis=1)
 
-        movie_ratings = []
-
-        for index in ratings_df.index:
-            rating = ratings_df['rating'][index]
-            movie_id = index
-            rating_counts = ratings_df['rating_counts'][index]
-            score = ratings_df['score'][index]
-
-            movie_ratings.append(
-                MovieRating(
-                    movie_id=movie_id,
-                    rating=rating,
-                    rating_counts=rating_counts,
-                    score=score
-                )
-            )
-        MovieRating.objects.bulk_create(movie_ratings)
-        end = time.time()
-        print(
-            f"Registered {len(movie_ratings)} movie ratings in {end-start:.2f}s")
+        return ratings_df
