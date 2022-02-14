@@ -32,7 +32,7 @@ docker-compose run server sh -c "python manage.py createsuperuser"
 ### Download the CSVs with movies informations in [MovieLens](https://grouplens.org/datasets/movielens/25m/).
 
 
-### Create a dir in root with create a directory named movies-csv and and extract the following files:
+### Create a dir in project root with create a directory named movies-csv and and extract the following files:
 - links.csv
 - movies.csv
 - ratings.csv
