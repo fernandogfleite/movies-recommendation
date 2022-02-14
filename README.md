@@ -1,9 +1,9 @@
 # Movie Recommendations API
 
-### Dependencies
-- Python 3.10.2 (used version in development)
-- Docker
-- Docker Compose
+### Dependencies (versions used in development)
+- Python 3.10.2 
+- Docker 20.10.12
+- Docker Compose 1.29.2
 
 ## How to run the application
 
